@@ -1,4 +1,5 @@
 use std::collections::hash_map::HashMap;
+use std::ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo};
 
 #[derive(Debug, PartialEq)]
 pub struct NamedVec<T: Named> {
@@ -21,20 +22,8 @@ impl<T: Named> NamedVec<T> {
     }
 
     pub fn get<'a, A: 'a>(&self, lookup: A) -> Option<&T> where A: Into<Lookup<'a>> {
-        // self.items.get(
         self.index_from_lookup(lookup.into()).and_then(|i| self.items.get(i))
     }
-
-    // pub fn get_by_name(&self, name: &str) -> Option<&T> {
-    //     match self.map.get(name) {
-    //         Some(index) => { self.items.get(index.clone()) }
-    //         None => { None },
-    //     }
-    // }
-
-    // pub fn get_by_index(&self, index: usize) -> Option<&T> {
-    //     self.items.get(index)
-    // }
 
     pub fn swap<'a, 'b, A: 'a, B: 'b>(&mut self, first: A, second: B)
     where A: Into<Lookup<'a>> + Copy, B: Into<Lookup<'b>> + Copy {
@@ -81,6 +70,80 @@ impl<T: Named> NamedVec<T> {
     }
 }
 
+impl<T: Named> Index<usize> for NamedVec<T> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &T {
+        &self.items[index]
+    }
+}
+
+impl<T: Named> Index<Range<usize>> for NamedVec<T> {
+    type Output = [T];
+
+    fn index(&self, index: Range<usize>) -> &[T] {
+        &self.items[index]
+    }
+}
+
+impl<T: Named> Index<RangeTo<usize>> for NamedVec<T> {
+    type Output = [T];
+
+    fn index(&self, index: RangeTo<usize>) -> &[T] {
+        &self.items[index]
+    }
+}
+
+impl<T: Named> Index<RangeFrom<usize>> for NamedVec<T> {
+    type Output = [T];
+
+    fn index(&self, index: RangeFrom<usize>) -> &[T] {
+        &self.items[index]
+    }
+}
+
+impl<T: Named> Index<RangeFull> for NamedVec<T> {
+    type Output = [T];
+
+    fn index(&self, _index: RangeFull) -> &[T] {
+        &self.items
+    }
+}
+
+impl<T: Named> IndexMut<usize> for NamedVec<T> {
+    fn index_mut(&mut self, index: usize) -> &mut T {
+        &mut self.items[index]
+    }
+}
+
+impl<T: Named> IndexMut<Range<usize>> for NamedVec<T> {
+    fn index_mut(&mut self, index: Range<usize>) -> &mut [T] {
+        &mut self.items[index]
+    }
+}
+
+impl<T: Named> IndexMut<RangeTo<usize>> for NamedVec<T> {
+    fn index_mut(&mut self, index: RangeTo<usize>) -> &mut [T] {
+        &mut self.items[index]
+    }
+}
+
+impl<T: Named> IndexMut<RangeFrom<usize>> for NamedVec<T> {
+    fn index_mut(&mut self, index: RangeFrom<usize>) -> &mut [T] {
+        &mut self.items[index]
+    }
+}
+
+impl<T: Named> IndexMut<RangeFull> for NamedVec<T> {
+    fn index_mut(&mut self, _index: RangeFull) -> &mut [T] {
+        &mut self.items
+    }
+}
+
+pub trait Named {
+    fn name(&self) -> &str;
+}
+
 pub enum Lookup<'a> {
     Name(&'a str),
     Index(usize),
@@ -96,8 +159,4 @@ impl<'a> From<usize> for Lookup<'a> {
     fn from(i: usize) -> Self {
         Lookup::Index(i)
     }
-}
-
-pub trait Named {
-    fn name(&self) -> &str;
 }

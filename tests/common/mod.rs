@@ -15,6 +15,7 @@ impl NamedNumber {
         }
     }
 
+    #[allow(dead_code)]
     pub fn num(&self) -> i32 {
         self.num
     }
