@@ -48,3 +48,11 @@ fn str_index() {
 
     assert_eq!(named_vec["foo"].num(), 0);
 }
+
+#[test]
+fn get_nonexistent_with_str() {
+    let mut named_vec = NamedVec::new();
+    named_vec.push(NamedNumber::new("foo", 0));
+
+    assert!(named_vec.get("bar").is_none());
+}

@@ -19,3 +19,12 @@ fn truncate() {
 
     assert_eq!(first, second);
 }
+
+#[test]
+fn truncate_empty() {
+    let mut named_vec: NamedVec<NamedNumber> = NamedVec::new();
+
+    named_vec.truncate(2);
+    named_vec.truncate(1);
+    named_vec.truncate(0);
+}

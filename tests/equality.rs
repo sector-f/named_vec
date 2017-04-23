@@ -30,3 +30,17 @@ fn inequality_with_two_items() {
 
     assert_eq!(first, second);
 }
+
+#[test]
+fn updating() {
+    let mut first = NamedVec::new();
+    first.push(NamedNumber::new("foo", 1));
+    first.push(NamedNumber::new("bar", 0));
+
+    let mut second = NamedVec::new();
+    second.push(NamedNumber::new("foo", 8));
+    second.push(NamedNumber::new("bar", 0));
+    second.push(NamedNumber::new("foo", 1));
+
+    assert_eq!(first, second);
+}
