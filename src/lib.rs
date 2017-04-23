@@ -25,6 +25,10 @@ impl<T: Named> NamedVec<T> {
         self.index_from_lookup(lookup.into()).and_then(|i| self.items.get(i))
     }
 
+    pub fn get_mut <'a, A: 'a>(&mut self, lookup: A) -> Option<&mut T> where A: Into<Lookup<'a>> {
+        self.index_from_lookup(lookup.into()).and_then(move |i| self.items.get_mut(i))
+    }
+
     pub fn swap<'a, 'b, A: 'a, B: 'b>(&mut self, first: A, second: B)
     where A: Into<Lookup<'a>> + Copy, B: Into<Lookup<'b>> + Copy {
         let old_i1 = self.index_from_lookup(first.into()).unwrap();
@@ -45,6 +49,16 @@ impl<T: Named> NamedVec<T> {
 
     pub fn len(&self) -> usize {
         self.items.len()
+    }
+
+    pub fn pop(&mut self) -> Option<T> {
+        if self.items.len() == 0 {
+            None
+        } else {
+            let last_item = self.items.pop().unwrap();
+            self.map.remove(last_item.name());
+            Some(last_item)
+        }
     }
 
     fn index_from_lookup(&self, lookup: Lookup) -> Option<usize> {
