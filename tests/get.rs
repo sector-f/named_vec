@@ -40,3 +40,11 @@ fn invalid_index_trait() {
 
     let ref _number = named_vec[3];
 }
+
+#[test]
+fn str_index() {
+    let mut named_vec = NamedVec::new();
+    named_vec.push(NamedNumber::new("foo", 0));
+
+    assert_eq!(named_vec["foo"].num(), 0);
+}

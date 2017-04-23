@@ -15,10 +15,40 @@ impl<T: Named> NamedVec<T> {
         }
     }
 
+    pub fn with_capacity(capacity: usize) -> Self {
+        NamedVec {
+            map: HashMap::with_capacity(capacity),
+            items: Vec::with_capacity(capacity),
+        }
+    }
+
     pub fn push(&mut self, item: T) {
         let name = item.name().to_owned();
         self.items.push(item);
         self.map.insert(name, self.items.len() - 1);
+    }
+
+    pub fn capacity(&self) -> usize {
+        self.items.capacity()
+    }
+
+    pub fn reserve(&mut self, additional: usize) {
+        self.items.reserve(additional);
+        self.map.reserve(additional);
+    }
+
+    pub fn shrink_to_fit(&mut self) {
+        self.items.shrink_to_fit();
+        self.map.shrink_to_fit();
+    }
+
+    pub fn truncate(&mut self, len: usize) {
+        let max = self.map.values().max().map(|n| n.clone()).unwrap();
+        for item in self.items[len..max+1].iter() {
+            let name = item.name();
+            self.map.remove(name);
+        }
+        self.items.truncate(len);
     }
 
     pub fn get<'a, A: 'a>(&self, lookup: A) -> Option<&T> where A: Into<Lookup<'a>> {
@@ -84,6 +114,18 @@ impl<T: Named> NamedVec<T> {
     }
 }
 
+///////////
+// Index //
+///////////
+
+impl<'a, T: Named> Index<&'a str> for NamedVec<T> {
+    type Output = T;
+
+    fn index(&self, index: &str) -> &T {
+        self.get(index).unwrap()
+    }
+}
+
 impl<T: Named> Index<usize> for NamedVec<T> {
     type Output = T;
 
@@ -124,6 +166,16 @@ impl<T: Named> Index<RangeFull> for NamedVec<T> {
     }
 }
 
+//////////////
+// IndexMut //
+//////////////
+
+impl<'a, T: Named> IndexMut<&'a str> for NamedVec<T> {
+    fn index_mut(&mut self, index: &str) -> &mut T {
+        self.get_mut(index).unwrap()
+    }
+}
+
 impl<T: Named> IndexMut<usize> for NamedVec<T> {
     fn index_mut(&mut self, index: usize) -> &mut T {
         &mut self.items[index]
@@ -158,6 +210,10 @@ pub trait Named {
     fn name(&self) -> &str;
 }
 
+//////////////////
+// Lookup //
+//////////////////
+
 pub enum Lookup<'a> {
     Name(&'a str),
     Index(usize),
@@ -172,5 +228,55 @@ impl<'a> From<&'a str> for Lookup<'a> {
 impl<'a> From<usize> for Lookup<'a> {
     fn from(i: usize) -> Self {
         Lookup::Index(i)
+    }
+}
+
+/////////////////
+// MultiLookup //
+/////////////////
+
+// This won't be useful until std::slice::SliceIndex is stable
+enum MultiLookup<'a> {
+    Name(&'a str),
+    Index(usize),
+    Range(Range<usize>),
+    RangeFrom(RangeFrom<usize>),
+    RangeTo(RangeTo<usize>),
+    RangeFull(RangeFull),
+}
+
+impl<'a> From<&'a str> for MultiLookup<'a> {
+    fn from(s: &'a str) -> Self {
+        MultiLookup::Name(s)
+    }
+}
+
+impl<'a> From<usize> for MultiLookup<'a> {
+    fn from(i: usize) -> Self {
+        MultiLookup::Index(i)
+    }
+}
+
+impl<'a> From<Range<usize>> for MultiLookup<'a> {
+    fn from(i: Range<usize>) -> Self {
+        MultiLookup::Range(i)
+    }
+}
+
+impl<'a> From<RangeFrom<usize>> for MultiLookup<'a> {
+    fn from(i: RangeFrom<usize>) -> Self {
+        MultiLookup::RangeFrom(i)
+    }
+}
+
+impl<'a> From<RangeTo<usize>> for MultiLookup<'a> {
+    fn from(i: RangeTo<usize>) -> Self {
+        MultiLookup::RangeTo(i)
+    }
+}
+
+impl<'a> From<RangeFull> for MultiLookup<'a> {
+    fn from(i: RangeFull) -> Self {
+        MultiLookup::RangeFull(i)
     }
 }
