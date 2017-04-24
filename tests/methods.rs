@@ -28,3 +28,46 @@ fn truncate_empty() {
     named_vec.truncate(1);
     named_vec.truncate(0);
 }
+
+#[test]
+fn insert() {
+    let mut first = NamedVec::new();
+    first.push(NamedNumber::new("bar", 1));
+
+    let mut second = NamedVec::new();
+    second.push(NamedNumber::new("foo", 0));
+    second.push(NamedNumber::new("bar", 1));
+
+    first.insert(0, NamedNumber::new("foo", 0));
+
+    assert_eq!(first, second);
+}
+
+#[test]
+#[should_panic]
+fn insert_invalid_index() {
+    let mut named_vec: NamedVec<NamedNumber> = NamedVec::new();
+    named_vec.push(NamedNumber::new("foo", 0));
+    named_vec.push(NamedNumber::new("bar", 1));
+
+    named_vec.insert(5, NamedNumber::new("baz", 10));
+}
+
+#[test]
+fn remove_item() {
+    let mut first = NamedVec::new();
+    first.push(NamedNumber::new("foo", 0));
+    first.push(NamedNumber::new("bar", 1));
+    first.push(NamedNumber::new("baz", 2));
+
+    let mut second = NamedVec::new();
+    second.push(NamedNumber::new("foo", 0));
+    second.push(NamedNumber::new("bar", 1));
+    second.push(NamedNumber::new("baz", 2));
+
+    let first_removed = first.remove(0);
+    let second_removed = second.remove("foo");
+
+    assert_eq!(first_removed, second_removed);
+    assert_eq!(first, second);
+}

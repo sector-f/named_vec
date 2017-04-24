@@ -8,7 +8,7 @@ use std::ops::{Index, Range, RangeFrom, RangeFull, RangeTo};
 /// an existing element rather than add a new one if the new element's name is in use by
 /// an existing element.
 ///
-/// Internally, a `NamedVec<T>` is a wrapper around a `Vec<T>`, with names
+/// Internally, a `NamedVec<T>` is a `Vec<T>` with names
 /// and their corresponding indices stored as a `HashMap<String, usize>`.
 #[derive(Debug, PartialEq)]
 pub struct NamedVec<T: Named> {
@@ -25,7 +25,8 @@ impl<T: Named> NamedVec<T> {
         }
     }
 
-    /// Creates an empty `NamedVec<T>` with the specified capacity.
+    /// Creates an empty `NamedVec<T>` with both an underlying `Vec<T>` and
+    /// `HashMap` of the specified capacity.
     ///
     /// The vector will be able to hold exactly `capacity` elements without
     /// relocating. If `capacity` is 0, the vector will not allocate.
@@ -38,16 +39,77 @@ impl<T: Named> NamedVec<T> {
 
     /// Appends an element to the back of the collection,
     /// or replaces an element with the same name if one exists.
-    pub fn push(&mut self, item: T) {
-        match self.map.get(item.name()).map(|n| n.clone()) {
+    pub fn push(&mut self, value: T) {
+        match self.map.get(value.name()).map(|n| n.clone()) {
             Some(i) => {
-                self.items[i] = item;
+                self.items[i] = value;
             },
             None => {
-                self.map.insert(item.name().to_owned(), self.items.len());
-                self.items.push(item);
+                self.map.insert(value.name().to_owned(), self.items.len());
+                self.items.push(value);
             },
         }
+    }
+
+    /// Inserts an element at position `index` (shifting all elements after it to the right),
+    /// or replaces an element with the same name if one exists.
+    ///
+    /// Note that inserting a new item with this method requires
+    /// iterating over the internal `HashMap`, which is a linear operation.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `index` is out of bounds.
+    pub fn insert(&mut self, index: usize, value: T) {
+        match self.map.get(value.name()).map(|n| n.clone()) {
+            Some(i) => {
+                self.items[i] = value;
+            },
+            None => {
+                let name = value.name().to_owned();
+                self.items.insert(index, value);
+                for i in self.map.values_mut() {
+                    if i >= &mut (index.clone()) {
+                        *i += 1;
+                    }
+                }
+                self.map.insert(name, index);
+            },
+        }
+    }
+
+    /// Removes and returns the element specified by `lookup`
+    /// within the vector, shifting all elements after it to the left.
+    /// `lookup` can be either a `usize` index or a `&str` name.
+    ///
+    /// Note that removing an item with this method requires
+    /// iterating over the internal `HashMap`, which is a linear operation.
+    ///
+    /// # Panics
+    ///
+    /// * Panics if a `usize` argument is out of bounds.
+    /// * Panics if a `&str` argument is an invalid name.
+    pub fn remove<'a, A: 'a>(&mut self, lookup: A) -> T
+    where A: Into<Lookup<'a>> + Copy {
+        let index = match lookup.into() {
+            Lookup::Name(name) => {
+                let index = self.map[name].clone();
+                self.map.remove(name);
+                index
+            },
+            Lookup::Index(index) => {
+                let name = self.items[index].name();
+                self.map.remove(name);
+                index
+            },
+        };
+
+        for i in self.map.values_mut() {
+            if i >= &mut (index.clone()) {
+                *i -= 1;
+            }
+        }
+        self.items.remove(index)
     }
 
     /// Returns the number of elements the vector can hold without reallocating.
@@ -73,7 +135,7 @@ impl<T: Named> NamedVec<T> {
         self.map.shrink_to_fit();
     }
 
-    /// Shortens the vector, keeping the first len elements and dropping the rest.
+    /// Shortens the vector, keeping the first `len` elements and dropping the rest.
     ///
     /// If `len` is greater than the vector's current length, this has no effect.
     pub fn truncate(&mut self, len: usize) {
