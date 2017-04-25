@@ -1,4 +1,5 @@
 use std::collections::hash_map::HashMap;
+// use std::collections::hash_map::{HashMap, Entry};
 use std::ops::{Index, Range, RangeFrom, RangeFull, RangeTo};
 
 ///////////
@@ -293,13 +294,54 @@ impl<T: Named> NamedVec<T> {
 // Iterators //
 //////////////////
 
-// impl<T: Named> Iterator for NamedVec<T> {
-//     type Item = (String, T);
+impl<T: Named> IntoIterator for NamedVec<T> {
+    type Item = (String, T);
+    type IntoIter = NamedVecIter<T>;
 
-//     fn next(&mut self) -> Option<Self::Item> {
-//         unimplemented!();
-//     }
-// }
+    fn into_iter(self) -> Self::IntoIter {
+        NamedVecIter {
+            map: self.map,
+            items: self.items.into_iter(),
+        }
+    }
+}
+
+pub struct NamedVecIter<T: Named> {
+    map: HashMap<String, usize>,
+    items: std::vec::IntoIter<T>,
+}
+
+impl<T: Named> Iterator for NamedVecIter<T> {
+    type Item = (String, T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.items.next() {
+            Some(item) => {
+                // To-Do: Don't allocate another String here
+                // Maybe change the key to a Cow?
+                // Maybe change the HashMap keys from Strings to &strs?
+                // Maybe just iterate over T rather than (String, T)?
+                // let name = std::borrow::Cow::from(item.name());
+                // match self.map.entry(name.into_owned()) {
+                //     Entry::Occupied(entry) => {
+
+                //     },
+                //     Entry::Vacant(_vacant) => {
+                //         unreachable!();
+                //     },
+                // }
+
+                let name = item.name().to_owned();
+                self.map.remove(&name);
+                Some((name, item))
+            },
+            None => {
+                None
+            },
+        }
+    }
+}
+
 
 ///////////
 // Index //

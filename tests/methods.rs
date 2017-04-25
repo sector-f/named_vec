@@ -73,12 +73,20 @@ fn remove_item() {
 }
 
 #[test]
-fn iterate() {
+fn into_iterator() {
     let mut first = NamedVec::new();
     first.push(NamedNumber::new("foo", 0));
     first.push(NamedNumber::new("bar", 1));
     first.push(NamedNumber::new("baz", 2));
 
+    let mut second = NamedVec::new();
+    second.push(NamedNumber::new("foo", 0));
+    second.push(NamedNumber::new("bar", 1));
+    second.push(NamedNumber::new("baz", 2));
+
+    let mut second_iter = second.into_iter();
+
     for item in first {
+        assert_eq!(item, second_iter.next().unwrap());
     }
 }
