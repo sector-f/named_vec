@@ -71,3 +71,14 @@ fn remove_item() {
     assert_eq!(first_removed, second_removed);
     assert_eq!(first, second);
 }
+
+#[test]
+fn iterate() {
+    let mut first = NamedVec::new();
+    first.push(NamedNumber::new("foo", 0));
+    first.push(NamedNumber::new("bar", 1));
+    first.push(NamedNumber::new("baz", 2));
+
+    for item in first {
+    }
+}

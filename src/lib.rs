@@ -1,6 +1,41 @@
 use std::collections::hash_map::HashMap;
 use std::ops::{Index, Range, RangeFrom, RangeFull, RangeTo};
 
+///////////
+// Named //
+///////////
+
+pub trait Named {
+    fn name(&self) -> &str;
+}
+
+////////////
+// Lookup //
+////////////
+
+/// Used to refer to elements in a `NamedVec`.
+///
+/// However, `NamedVec`'s methods
+/// are designed to avoid making the user have to create a `Lookup`.
+/// Prefer `named_vec.get("foo")` to `named_vec.get(Lookup::Name("foo"))`
+/// and `named_vec.get(0)` to `named_vec.get(Lookup::Index(0))`
+pub enum Lookup<'a> {
+    Name(&'a str),
+    Index(usize),
+}
+
+impl<'a> From<&'a str> for Lookup<'a> {
+    fn from(s: &'a str) -> Self {
+        Lookup::Name(s)
+    }
+}
+
+impl<'a> From<usize> for Lookup<'a> {
+    fn from(i: usize) -> Self {
+        Lookup::Index(i)
+    }
+}
+
 /// Vector where each element has an associated name.
 ///
 /// Elements must implement the [`Named`](trait.Named.html) trait so that they can be accessed
@@ -10,7 +45,12 @@ use std::ops::{Index, Range, RangeFrom, RangeFull, RangeTo};
 ///
 /// Internally, a `NamedVec<T>` is a `Vec<T>` with names
 /// and their corresponding indices stored as a `HashMap<String, usize>`.
-#[derive(Debug, PartialEq)]
+
+//////////////
+// NamedVec //
+//////////////
+
+#[derive(Debug, PartialEq, Clone)]
 pub struct NamedVec<T: Named> {
     map: HashMap<String, usize>,
     items: Vec<T>,
@@ -114,7 +154,10 @@ impl<T: Named> NamedVec<T> {
 
     /// Returns the number of elements the vector can hold without reallocating.
     pub fn capacity(&self) -> usize {
-        self.items.capacity()
+        std::cmp::min(
+            self.items.capacity(),
+            self.map.capacity(),
+        )
     }
 
     /// Reserves capacity for at least `additional` more elements to be inserted in
@@ -246,6 +289,18 @@ impl<T: Named> NamedVec<T> {
     }
 }
 
+//////////////////
+// Iterators //
+//////////////////
+
+// impl<T: Named> Iterator for NamedVec<T> {
+//     type Item = (String, T);
+
+//     fn next(&mut self) -> Option<Self::Item> {
+//         unimplemented!();
+//     }
+// }
+
 ///////////
 // Index //
 ///////////
@@ -298,86 +353,53 @@ impl<T: Named> Index<RangeFull> for NamedVec<T> {
     }
 }
 
-///////////
-// Named //
-///////////
-
-pub trait Named {
-    fn name(&self) -> &str;
-}
-
-////////////
-// Lookup //
-////////////
-
-/// Used to refer to elements in a `NamedVec`.
-///
-/// However, `NamedVec`'s methods
-/// are designed to avoid making the user have to create a `Lookup`.
-/// In other words, prefer `named_vec.get("foo")` to `named_vec.get(Lookup::Name("foo"))`.
-pub enum Lookup<'a> {
-    Name(&'a str),
-    Index(usize),
-}
-
-impl<'a> From<&'a str> for Lookup<'a> {
-    fn from(s: &'a str) -> Self {
-        Lookup::Name(s)
-    }
-}
-
-impl<'a> From<usize> for Lookup<'a> {
-    fn from(i: usize) -> Self {
-        Lookup::Index(i)
-    }
-}
-
 /////////////////
 // MultiLookup //
 /////////////////
 
 // This won't be useful until std::slice::SliceIndex is stable
-enum MultiLookup<'a> {
-    Name(&'a str),
-    Index(usize),
-    Range(Range<usize>),
-    RangeFrom(RangeFrom<usize>),
-    RangeTo(RangeTo<usize>),
-    RangeFull(RangeFull),
-}
 
-impl<'a> From<&'a str> for MultiLookup<'a> {
-    fn from(s: &'a str) -> Self {
-        MultiLookup::Name(s)
-    }
-}
+// enum MultiLookup<'a> {
+//     Name(&'a str),
+//     Index(usize),
+//     Range(Range<usize>),
+//     RangeFrom(RangeFrom<usize>),
+//     RangeTo(RangeTo<usize>),
+//     RangeFull(RangeFull),
+// }
 
-impl<'a> From<usize> for MultiLookup<'a> {
-    fn from(i: usize) -> Self {
-        MultiLookup::Index(i)
-    }
-}
+// impl<'a> From<&'a str> for MultiLookup<'a> {
+//     fn from(s: &'a str) -> Self {
+//         MultiLookup::Name(s)
+//     }
+// }
 
-impl<'a> From<Range<usize>> for MultiLookup<'a> {
-    fn from(i: Range<usize>) -> Self {
-        MultiLookup::Range(i)
-    }
-}
+// impl<'a> From<usize> for MultiLookup<'a> {
+//     fn from(i: usize) -> Self {
+//         MultiLookup::Index(i)
+//     }
+// }
 
-impl<'a> From<RangeFrom<usize>> for MultiLookup<'a> {
-    fn from(i: RangeFrom<usize>) -> Self {
-        MultiLookup::RangeFrom(i)
-    }
-}
+// impl<'a> From<Range<usize>> for MultiLookup<'a> {
+//     fn from(i: Range<usize>) -> Self {
+//         MultiLookup::Range(i)
+//     }
+// }
 
-impl<'a> From<RangeTo<usize>> for MultiLookup<'a> {
-    fn from(i: RangeTo<usize>) -> Self {
-        MultiLookup::RangeTo(i)
-    }
-}
+// impl<'a> From<RangeFrom<usize>> for MultiLookup<'a> {
+//     fn from(i: RangeFrom<usize>) -> Self {
+//         MultiLookup::RangeFrom(i)
+//     }
+// }
 
-impl<'a> From<RangeFull> for MultiLookup<'a> {
-    fn from(i: RangeFull) -> Self {
-        MultiLookup::RangeFull(i)
-    }
-}
+// impl<'a> From<RangeTo<usize>> for MultiLookup<'a> {
+//     fn from(i: RangeTo<usize>) -> Self {
+//         MultiLookup::RangeTo(i)
+//     }
+// }
+
+// impl<'a> From<RangeFull> for MultiLookup<'a> {
+//     fn from(i: RangeFull) -> Self {
+//         MultiLookup::RangeFull(i)
+//     }
+// }
