@@ -1,5 +1,4 @@
 use std::collections::hash_map::HashMap;
-// use std::collections::hash_map::{HashMap, Entry};
 use std::ops::{Index, Range, RangeFrom, RangeFull, RangeTo};
 
 ///////////
@@ -295,53 +294,46 @@ impl<T: Named> NamedVec<T> {
 //////////////////
 
 impl<T: Named> IntoIterator for NamedVec<T> {
-    type Item = (String, T);
-    type IntoIter = NamedVecIter<T>;
+    type Item = T;
+    type IntoIter = IntoIter<T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        NamedVecIter {
-            map: self.map,
+        IntoIter {
             items: self.items.into_iter(),
         }
     }
 }
 
-pub struct NamedVecIter<T: Named> {
-    map: HashMap<String, usize>,
-    items: std::vec::IntoIter<T>,
-}
+impl <'a, T: Named> IntoIterator for &'a NamedVec<T> {
+    type Item = &'a T;
+    type IntoIter = std::slice::Iter<'a, T>;
 
-impl<T: Named> Iterator for NamedVecIter<T> {
-    type Item = (String, T);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.items.next() {
-            Some(item) => {
-                // To-Do: Don't allocate another String here
-                // Maybe change the key to a Cow?
-                // Maybe change the HashMap keys from Strings to &strs?
-                // Maybe just iterate over T rather than (String, T)?
-                // let name = std::borrow::Cow::from(item.name());
-                // match self.map.entry(name.into_owned()) {
-                //     Entry::Occupied(entry) => {
-
-                //     },
-                //     Entry::Vacant(_vacant) => {
-                //         unreachable!();
-                //     },
-                // }
-
-                let name = item.name().to_owned();
-                self.map.remove(&name);
-                Some((name, item))
-            },
-            None => {
-                None
-            },
-        }
+    fn into_iter(self) -> std::slice::Iter<'a, T> {
+        self.items.iter()
     }
 }
 
+impl <'a, T: Named> IntoIterator for &'a mut NamedVec<T> {
+    type Item = &'a mut T;
+    type IntoIter = std::slice::IterMut<'a, T>;
+
+    fn into_iter(self) -> std::slice::IterMut<'a, T> {
+        self.items.iter_mut()
+    }
+}
+
+/// Iterator over the items in a `NamedVec<T>`
+pub struct IntoIter<T: Named> {
+    items: std::vec::IntoIter<T>,
+}
+
+impl<T: Named> Iterator for IntoIter<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.items.next()
+    }
+}
 
 ///////////
 // Index //
