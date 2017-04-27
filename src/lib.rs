@@ -335,19 +335,13 @@ impl<T: Named> NamedVec<T> {
 
     #[doc(hidden)]
     pub fn from_box(items: Box<[T]>) -> Self {
+        let mut named_vec = NamedVec::new();
         let vec = <[_]>::into_vec(items);
 
-        let mut counter = 0;
-        let mut map = HashMap::new();
-        for item in &vec {
-            map.insert(item.name().to_owned(), counter);
-            counter += 1;
+        for item in vec {
+            named_vec.push(item);
         }
-
-        NamedVec {
-            items: vec,
-            map: map,
-        }
+        named_vec
     }
 }
 
