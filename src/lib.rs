@@ -218,9 +218,54 @@ impl<T: Named> NamedVec<T> {
     /// Returns a mutable reference to an element.
     ///
     /// See [`get()`](#method.get) for more information.
-    pub fn get_mut <'a, A: 'a>(&mut self, lookup: A) -> Option<&mut T>
+    pub fn get_mut<'a, A: 'a>(&mut self, lookup: A) -> Option<&mut T>
     where A: Into<Lookup<'a>> {
         self.index_from_lookup(lookup.into()).and_then(move |i| self.items.get_mut(i))
+    }
+
+    /// Returns a reference to a subslice.
+    ///
+    /// Unlike [`get()`](#method.get), this function only accepts range types.
+    /// It will be merged with [`get()`](#method.get) once `std::slice::SliceIndex` is stable.
+    pub fn get_range<A>(&self, range: A) -> Option<&[T]>
+    where A: Into<MultiLookup> {
+        match range.into() {
+            MultiLookup::Range(range) => {
+                self.items.get(range)
+            }
+            MultiLookup::RangeFrom(range) => {
+                self.items.get(range)
+            }
+            MultiLookup::RangeTo(range) => {
+                self.items.get(range)
+            }
+            MultiLookup::RangeFull(range) => {
+                self.items.get(range)
+            }
+        }
+    }
+
+    /// Returns a mutable reference to a subslice.
+    ///
+    /// Unlike [`get_mut()`](#method.get_mut), this function only accepts range types.
+    /// It will be merged with [`get_mut()`](#method.get_mut)
+    /// once `std::slice::SliceIndex` is stable.
+    pub fn get_mut_range<A>(&mut self, range: A) -> Option<&mut [T]>
+    where A: Into<MultiLookup> {
+        match range.into() {
+            MultiLookup::Range(range) => {
+                self.items.get_mut(range)
+            }
+            MultiLookup::RangeFrom(range) => {
+                self.items.get_mut(range)
+            }
+            MultiLookup::RangeTo(range) => {
+                self.items.get_mut(range)
+            }
+            MultiLookup::RangeFull(range) => {
+                self.items.get_mut(range)
+            }
+        }
     }
 
     /// Swaps two elements.
@@ -391,16 +436,16 @@ impl<T: Named> Index<RangeFull> for NamedVec<T> {
 // MultiLookup //
 /////////////////
 
-// This won't be useful until std::slice::SliceIndex is stable
+// This will be better once std::slice::SliceIndex is stable
 
-// enum MultiLookup<'a> {
-//     Name(&'a str),
-//     Index(usize),
-//     Range(Range<usize>),
-//     RangeFrom(RangeFrom<usize>),
-//     RangeTo(RangeTo<usize>),
-//     RangeFull(RangeFull),
-// }
+pub enum MultiLookup {
+    // Name(&'a str),
+    // Index(usize),
+    Range(Range<usize>),
+    RangeFrom(RangeFrom<usize>),
+    RangeTo(RangeTo<usize>),
+    RangeFull(RangeFull),
+}
 
 // impl<'a> From<&'a str> for MultiLookup<'a> {
 //     fn from(s: &'a str) -> Self {
@@ -414,26 +459,26 @@ impl<T: Named> Index<RangeFull> for NamedVec<T> {
 //     }
 // }
 
-// impl<'a> From<Range<usize>> for MultiLookup<'a> {
-//     fn from(i: Range<usize>) -> Self {
-//         MultiLookup::Range(i)
-//     }
-// }
+impl<'a> From<Range<usize>> for MultiLookup {
+    fn from(i: Range<usize>) -> Self {
+        MultiLookup::Range(i)
+    }
+}
 
-// impl<'a> From<RangeFrom<usize>> for MultiLookup<'a> {
-//     fn from(i: RangeFrom<usize>) -> Self {
-//         MultiLookup::RangeFrom(i)
-//     }
-// }
+impl<'a> From<RangeFrom<usize>> for MultiLookup {
+    fn from(i: RangeFrom<usize>) -> Self {
+        MultiLookup::RangeFrom(i)
+    }
+}
 
-// impl<'a> From<RangeTo<usize>> for MultiLookup<'a> {
-//     fn from(i: RangeTo<usize>) -> Self {
-//         MultiLookup::RangeTo(i)
-//     }
-// }
+impl<'a> From<RangeTo<usize>> for MultiLookup {
+    fn from(i: RangeTo<usize>) -> Self {
+        MultiLookup::RangeTo(i)
+    }
+}
 
-// impl<'a> From<RangeFull> for MultiLookup<'a> {
-//     fn from(i: RangeFull) -> Self {
-//         MultiLookup::RangeFull(i)
-//     }
-// }
+impl<'a> From<RangeFull> for MultiLookup {
+    fn from(i: RangeFull) -> Self {
+        MultiLookup::RangeFull(i)
+    }
+}
