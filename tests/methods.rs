@@ -1,3 +1,4 @@
+#[macro_use]
 extern crate named_vec;
 use named_vec::*;
 
@@ -90,3 +91,19 @@ fn into_iterator() {
         assert_eq!(item, second_iter.next().unwrap());
     }
 }
+
+#[test]
+fn named_vec_macro() {
+    let named_vec = {
+        named_vec![
+            NamedNumber::new("foo", 0),
+            NamedNumber::new("bar", 1),
+            NamedNumber::new("baz", 2),
+        ]
+    };
+
+    assert_eq!(named_vec[0], NamedNumber::new("foo", 0));
+    assert_eq!(named_vec[1], NamedNumber::new("bar", 1));
+    assert_eq!(named_vec[2], NamedNumber::new("baz", 2));
+}
+

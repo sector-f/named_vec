@@ -332,6 +332,23 @@ impl<T: Named> NamedVec<T> {
             },
         }
     }
+
+    #[doc(hidden)]
+    pub fn from_box(items: Box<[T]>) -> Self {
+        let vec = <[_]>::into_vec(items);
+
+        let mut counter = 0;
+        let mut map = HashMap::new();
+        for item in &vec {
+            map.insert(item.name().to_owned(), counter);
+            counter += 1;
+        }
+
+        NamedVec {
+            items: vec,
+            map: map,
+        }
+    }
 }
 
 //////////////////
@@ -481,4 +498,16 @@ impl<'a> From<RangeFull> for MultiLookup {
     fn from(i: RangeFull) -> Self {
         MultiLookup::RangeFull(i)
     }
+}
+
+////////////
+// Macros //
+////////////
+
+#[macro_export]
+macro_rules! named_vec {
+    ($($x:expr),*) => (
+        NamedVec::from_box(Box::new([$($x),*]))
+    );
+    ($($x:expr,)*) => (named_vec![$($x),*])
 }
