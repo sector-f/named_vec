@@ -335,13 +335,22 @@ impl<T: Named> NamedVec<T> {
 
     #[doc(hidden)]
     pub fn from_box(items: Box<[T]>) -> Self {
-        let mut named_vec = NamedVec::new();
         let vec = <[_]>::into_vec(items);
 
-        for item in vec {
-            named_vec.push(item);
+        let mut counter: usize = 0;
+        let mut map = HashMap::new();
+
+        for item in &vec {
+            if let None = map.get(item.name()) {
+                map.insert(item.name().to_owned(), counter);
+                counter += 1;
+            }
         }
-        named_vec
+
+        NamedVec {
+            map: map,
+            items: vec,
+        }
     }
 }
 
@@ -498,6 +507,13 @@ impl<'a> From<RangeFull> for MultiLookup {
 // Macros //
 ////////////
 
+/// Creates a `NamedVec` using the same syntax as the `vec!` macro.
+///
+/// Note that a `NamedVec` does not allow duplicate items;
+/// if multiple items with the same name are passed to `named_vec!`,
+/// only the first will be inserted into the resulting `NamedVec`.
+///
+/// Additionally, the `vec![T; N]` syntax is not supported because of this.
 #[macro_export]
 macro_rules! named_vec {
     ($($x:expr),*) => (
